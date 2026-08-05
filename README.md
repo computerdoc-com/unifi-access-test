@@ -161,5 +161,34 @@ distinctive body:
 ```
 
 Worth recognizing, because it means a mistyped path can't be confused with a permission
-problem — they look nothing alike. Consult Ubiquiti's API reference for the full endpoint
+problem — they look nothing alike. Consult the API reference below for the full endpoint
 list; the set above is only what this script probes and has confirmed.
+
+## API reference
+
+[docs/api_reference.md](docs/api_reference.md) is Ubiquiti's full API reference converted
+from PDF — 194 pages, 13 chapters, ~300 tables — with `docs/api_reference.html` as a
+browsable version with a sidebar TOC. This is where the endpoints the script doesn't
+probe are documented.
+
+Regenerate both from the upstream PDF:
+
+```sh
+python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt
+curl -sLO https://assets.identity.ui.com/unifi-access/api_reference.pdf
+.venv/bin/python tools/pdf2md.py api_reference.pdf docs/api_reference.md
+pandoc docs/api_reference.md -f gfm -t html5 -s --toc --toc-depth=3 \
+  --metadata title="UniFi Access API Reference" -o docs/api_reference.html
+```
+
+[tools/pdf2md.py](tools/pdf2md.py) recovers structure from font metadata (heading sizes,
+`LucidaConsole` for code) and the ruled grid for tables; `pdftotext` and `pandoc` alone
+both flatten this PDF badly. Token-frequency diffing against an independent `pdftotext`
+extraction confirms nothing is dropped.
+
+Two spots reproduce flaws in the source PDF rather than the conversion: §6.5's NFC
+enrollment flowchart is a broken image placeholder upstream (the artwork isn't in the
+file), and one `face.detect_distance` cell in §8.2 is scrambled in the PDF's own text
+layer.
+
+The generated docs are committed, so the PDF itself is gitignored.

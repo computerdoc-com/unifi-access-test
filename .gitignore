@@ -1,3 +1,6 @@
 .env
 .env.local
 .DS_Store
+.venv/
+api_reference.pdf
+__pycache__/
