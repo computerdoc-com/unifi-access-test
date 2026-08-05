@@ -124,8 +124,42 @@ A dropped connection and an unlistened port look nothing alike, so measure befor
 theorizing: `ping <host>` answering while `nc -z <host> 12445` hangs is close to proof
 that the policy — not the network, the ISP, or the service — is what's in the way.
 
-## Endpoints probed by default
+## API tokens: scope and expiry
 
-`users`, `user_groups`, `doors`, `devices`, `visitors`, and
-`credentials/nfc_cards/tokens`. Door-related calls (unlock, door status, access policies)
-return empty results until reader/hub hardware is adopted by the controller.
+A token is **not** all-or-nothing. When you mint one, it carries a **Validity Period**
+(including `Never Expire`) and a permission per category, each set to `None`, `View` or
+`Edit`:
+
+`People & Groups` · `Visitor` · `Access Policy` · `Credentials` · `Locations` ·
+`Device` · `System Log` · `Webhooks` · `API Server`
+
+That is the complete list — `API Server` is the last one. Note there is **no `Doors`
+category**: door operations presumably fall under `Locations` or `Device`, but which one
+is unverified here, and it can't be settled on a controller with no doors adopted.
+
+Grant the minimum an integration needs. A token that only reads doors has no business
+holding `Edit` on `Credentials` or `People & Groups`, which would let it mint NFC cards
+and PIN codes. If you set an expiry, track it — an expired token means the integration
+stops working and only the site's own admin can mint a replacement.
+
+## Endpoints
+
+Verified present on a live controller:
+
+`users` · `user_groups` · `doors` · `devices` · `visitors` ·
+`credentials/nfc_cards/tokens` · `webhooks/endpoints`
+
+Door-related calls (unlock, door status, access policies) return empty results until
+reader/hub hardware is adopted by the controller.
+
+**Permission categories are not URL segments.** `locations`, `system_logs` and
+`api_server` are category names, not paths — they 404. An unknown path returns a
+distinctive body:
+
+```json
+{"code":404,"codeS":"CODE_NOT_FOUND","msg":"The API was not found.","error":"you entered no-man zone"}
+```
+
+Worth recognizing, because it means a mistyped path can't be confused with a permission
+problem — they look nothing alike. Consult Ubiquiti's API reference for the full endpoint
+list; the set above is only what this script probes and has confirmed.
